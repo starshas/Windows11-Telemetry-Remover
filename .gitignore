@@ -1,6 +1,10 @@
+/.*
+!/.gitignore
+
 ignored-issues.json
 WindowsTelemetryRemoverBackups/
 WindowsPrivacyToolBackups/
+*.zip
 *.log
 change-history.jsonl
 *.tmp
