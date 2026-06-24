@@ -3447,8 +3447,6 @@ try {
     Write-Host ('Windows Telemetry Remover {0}' -f $script:ToolVersion) -ForegroundColor Green
     Write-Host ('Operating System: {0}' -f (Get-OperatingSystemDisplayString))
     Write-Host ('Policy Registry: {0}' -f (Get-PolicyStateDisplayString -Database $database))
-    Write-Host ('Database: {0}' -f $resolvedDatabasePath)
-    Write-Host ('Database version: {0}' -f $database.databaseVersion)
 
     if ($ValidateOnly) {
         Write-Host ('Database is valid. Loaded {0} item(s).' -f @($database.items).Count) -ForegroundColor Green

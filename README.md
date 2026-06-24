@@ -1,5 +1,7 @@
 # Windows 11 Telemetry Remover
 
+![Screenshot](assets/windows-telemetry-remover-audit.png)
+
 Windows Telemetry Remover is a local, PowerShell-based audit and hardening tool for Windows 11 privacy-related telemetry, diagnostics, feedback, cloud search, sync, Office connected experiences, crash reporting, and similar data-exposure surfaces.
 
 The tool starts with a read-only audit, shows the current state, explains the downside of every fix, and prints the exact command that would be used before anything is changed.
