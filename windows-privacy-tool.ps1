@@ -22,7 +22,7 @@ param(
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
-$script:ToolVersion = '1.0.0'
+$script:ToolVersion = '1.0.1'
 $script:LogPath = $null
 $script:ChangeHistoryPath = $null
 $script:LastOperationResult = $null
@@ -444,6 +444,92 @@ function Get-CurrentWindowsBuildNumber {
     }
 
     return -1
+}
+
+function Get-OperatingSystemDisplayString {
+    $caption = ''
+    $architecture = ''
+    $version = ''
+    $build = ''
+
+    try {
+        $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
+        $caption = [string]$os.Caption
+        $architecture = [string]$os.OSArchitecture
+        $version = [string]$os.Version
+        $build = [string]$os.BuildNumber
+    }
+    catch {
+    }
+
+    if ([string]::IsNullOrWhiteSpace($caption)) {
+        try {
+            $caption = [string](Get-ItemPropertyValue `
+                -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' `
+                -Name 'ProductName' `
+                -ErrorAction Stop)
+        }
+        catch {
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($caption)) {
+        $caption = 'Windows'
+    }
+
+    $caption = $caption -replace '^(?i)Microsoft\s+', ''
+
+    if ([string]::IsNullOrWhiteSpace($architecture)) {
+        if ([Environment]::Is64BitOperatingSystem) {
+            $architecture = '64-bit'
+        }
+        else {
+            $architecture = '32-bit'
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($version)) {
+        try {
+            $majorMinor = [string](Get-ItemPropertyValue `
+                -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' `
+                -Name 'CurrentMajorVersionNumber' `
+                -ErrorAction Stop)
+            $minor = [string](Get-ItemPropertyValue `
+                -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' `
+                -Name 'CurrentMinorVersionNumber' `
+                -ErrorAction Stop)
+            $version = '{0}.{1}' -f $majorMinor, $minor
+        }
+        catch {
+            $version = 'Unknown'
+        }
+    }
+    else {
+        $versionParts = @($version -split '\.')
+
+        if ($versionParts.Count -ge 2) {
+            $version = '{0}.{1}' -f $versionParts[0], $versionParts[1]
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($build)) {
+        $buildNumber = Get-CurrentWindowsBuildNumber
+
+        if ($buildNumber -ge 0) {
+            $build = [string]$buildNumber
+        }
+        else {
+            $build = 'Unknown'
+        }
+    }
+
+    $numericBuild = 0
+
+    if ([int]::TryParse($build, [ref]$numericBuild) -and $numericBuild -ge 22000) {
+        $caption = $caption -replace '(?i)^Windows 10\b', 'Windows 11'
+    }
+
+    return '{0} {1} ({2}, Build {3})' -f $caption, $architecture, $version, $build
 }
 
 function Test-EditionFamilyMatches {
@@ -3297,6 +3383,7 @@ try {
     $resolvedDatabasePath = $importedDatabase.Path
 
     Write-Host ('Windows Telemetry Remover {0}' -f $script:ToolVersion) -ForegroundColor Green
+    Write-Host ('Operating System: {0}' -f (Get-OperatingSystemDisplayString))
     Write-Host ('Database: {0}' -f $resolvedDatabasePath)
     Write-Host ('Database version: {0}' -f $database.databaseVersion)
 
