@@ -22,7 +22,7 @@ param(
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
-$script:ToolVersion = '1.0.1'
+$script:ToolVersion = '1.0.2'
 $script:LogPath = $null
 $script:ChangeHistoryPath = $null
 $script:LastOperationResult = $null
@@ -740,6 +740,68 @@ function Format-AuditItemTags {
     }
 
     return '[{0}]' -f $Item.scope
+}
+
+function Test-RegistryPolicyPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string] $Path
+    )
+
+    return (
+        $Path -match '(?i)^[A-Z]+:\\(?:SOFTWARE\\)?Policies\\' -or
+        $Path -match '(?i)^[A-Z]+:\\Software\\Policies\\'
+    )
+}
+
+function Get-PolicyStateDisplayString {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object] $Database
+    )
+
+    $policyItems = @(
+        $Database.items |
+            Where-Object {
+                Test-PolicyBackedItem -Item $_
+            }
+    )
+    $activePolicyItems = 0
+    $activePolicyValues = 0
+
+    foreach ($item in $policyItems) {
+        $itemHasActivePolicyValue = $false
+
+        foreach ($check in @($item.checks)) {
+            if (
+                [string]$check.type -ne 'registryDwordEquals' -or
+                -not (Test-ObjectProperty -InputObject $check -Name 'path') -or
+                -not (Test-ObjectProperty -InputObject $check -Name 'name') -or
+                -not (Test-RegistryPolicyPath -Path ([string]$check.path))
+            ) {
+                continue
+            }
+
+            $state = Get-RegistryValueState `
+                -Path ([string]$check.path) `
+                -Name ([string]$check.name)
+
+            if ($state.ValueExists) {
+                $activePolicyValues++
+                $itemHasActivePolicyValue = $true
+            }
+        }
+
+        if ($itemHasActivePolicyValue) {
+            $activePolicyItems++
+        }
+    }
+
+    return '{0} value(s), {1}/{2} item(s) active' -f `
+        $activePolicyValues,
+        $activePolicyItems,
+        $policyItems.Count
 }
 
 function Add-ValidationError {
@@ -3384,6 +3446,7 @@ try {
 
     Write-Host ('Windows Telemetry Remover {0}' -f $script:ToolVersion) -ForegroundColor Green
     Write-Host ('Operating System: {0}' -f (Get-OperatingSystemDisplayString))
+    Write-Host ('Policy Registry: {0}' -f (Get-PolicyStateDisplayString -Database $database))
     Write-Host ('Database: {0}' -f $resolvedDatabasePath)
     Write-Host ('Database version: {0}' -f $database.databaseVersion)
 

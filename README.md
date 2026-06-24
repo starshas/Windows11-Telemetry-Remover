@@ -1,4 +1,4 @@
-# Windows 11 Telemetry Remover 1.0.1
+# Windows 11 Telemetry Remover 1.0.2
 
 Windows Telemetry Remover is a local, PowerShell-based audit and hardening tool for Windows 11 privacy-related telemetry, diagnostics, feedback, cloud search, sync, Office connected experiences, crash reporting, and similar data-exposure surfaces.
 
@@ -13,7 +13,15 @@ The database may mention older Windows builds when a Microsoft policy was deprec
 ## What It Does
 
 - Audits privacy-related Windows, Microsoft Defender, OneDrive, Edge sync, Windows Search, Office, WER, and scheduled-task settings.
-- Shows `[FIXED]`, `[ISSUE]`, `[IGNORED]`, or `[UNKNOWN]` for every database item.
+- Shows status labels for every database item:
+  - `[FIXED]` - the item already matches the database target state.
+  - `[ISSUE]` - the item is applicable and still needs a fix.
+  - `[IGNORED]` - the item is still detected but intentionally hidden by the user from the action list.
+  - `[UNKNOWN]` - the tool could not reliably determine the current state.
+  - `[MANUAL]` - the item needs manual intervention before the fix can be trusted.
+  - `[MAYBE]` - the fix may help in practice, but the official applicability does not fully cover this Windows edition.
+  - `[SKIP]` - the item is not applicable to the current Windows edition or build.
+  - `[DEPRECATED]` - the item is retained for version-aware databases but is obsolete on the current Windows build.
 - Colors `[ISSUE]` by severity: urgent, high, medium, low, or very low.
 - Displays `Exfiltration`, `Severity`, `Downside`, `Fix`, `Enable`, and proof URL/quote fields for detected issues.
 - Applies changes only through typed, allow-listed actions from `spyware-db.json`.

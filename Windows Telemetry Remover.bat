@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-title Windows Telemetry Remover 1.0.1
+title Windows Telemetry Remover 1.0.2
 set "ROOT=%~dp0"
 set "ENGINE=%ROOT%windows-privacy-tool.ps1"
 set "DATABASE=%ROOT%spyware-db.json"
