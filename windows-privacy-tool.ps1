@@ -604,6 +604,58 @@ function Get-SeverityColor {
     }
 }
 
+function Test-PolicyBackedItem {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object] $Item
+    )
+
+    if ([string]$Item.id -match '^policy\.') {
+        return $true
+    }
+
+    $paths = @()
+
+    foreach ($check in @($Item.checks)) {
+        if (Test-ObjectProperty -InputObject $check -Name 'path') {
+            $paths += [string]$check.path
+        }
+    }
+
+    foreach ($action in @($Item.disableActions)) {
+        if (Test-ObjectProperty -InputObject $action -Name 'path') {
+            $paths += [string]$action.path
+        }
+    }
+
+    if ($paths.Count -eq 0) {
+        return $false
+    }
+
+    $nonPolicyPaths = @(
+        $paths |
+            Where-Object {
+                $_ -notmatch '(?i)^[A-Z]+:\\(?:SOFTWARE\\)?Policies\\' -and
+                $_ -notmatch '(?i)^[A-Z]+:\\Software\\Policies\\'
+            }
+    )
+
+    return ($nonPolicyPaths.Count -eq 0)
+}
+
+function Format-AuditItemTags {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object] $Item
+    )
+
+    if (Test-PolicyBackedItem -Item $Item) {
+        return '[policy] [{0}]' -f $Item.scope
+    }
+
+    return '[{0}]' -f $Item.scope
+}
+
 function Add-ValidationError {
     param(
         [Parameter(Mandatory = $true)]
@@ -1574,41 +1626,42 @@ function Invoke-PrivacyAudit {
     foreach ($item in @($Database.items)) {
         $result = Test-PrivacyItem -Item $item
         $results += $result
+        $itemTags = Format-AuditItemTags -Item $item
 
         switch ($result.Status) {
             'Compliant' {
-                Write-Host ('[FIXED]  [{0}] {1}' -f $item.scope, $item.name) -ForegroundColor Green
+                Write-Host ('[FIXED]  {0} {1}' -f $itemTags, $item.name) -ForegroundColor Green
             }
             'Issue' {
                 if ([string]$item.id -in $ignoredIds) {
-                    Write-Host ('[IGNORED] [{0}] {1}' -f $item.scope, $item.name) -ForegroundColor DarkGray
+                    Write-Host ('[IGNORED] {0} {1}' -f $itemTags, $item.name) -ForegroundColor DarkGray
                     Write-Host ('          Current: {0}' -f $result.CurrentSummary) -ForegroundColor DarkGray
                 }
                 else {
-                    Write-Host ('[ISSUE]  [{0}] {1}' -f $item.scope, $item.name) -ForegroundColor (Get-SeverityColor -Value ([string]$item.severity))
+                    Write-Host ('[ISSUE]  {0} {1}' -f $itemTags, $item.name) -ForegroundColor (Get-SeverityColor -Value ([string]$item.severity))
                     Write-Host ('          Current: {0}' -f $result.CurrentSummary)
                 }
             }
             'Unknown' {
-                Write-Host ('[UNKNOWN] [{0}] {1}' -f $item.scope, $item.name) -ForegroundColor Red
+                Write-Host ('[UNKNOWN] {0} {1}' -f $itemTags, $item.name) -ForegroundColor Red
                 Write-Host ('          Error: {0}' -f $result.ErrorSummary)
             }
             'Manual' {
-                Write-Host ('[MANUAL] [{0}] {1}' -f $item.scope, $item.name) -ForegroundColor DarkYellow
+                Write-Host ('[MANUAL] {0} {1}' -f $itemTags, $item.name) -ForegroundColor DarkYellow
                 Write-Host ('          Current: {0}' -f $result.CurrentSummary)
                 Write-Host ('          Manual: {0}' -f $result.ManualReason) -ForegroundColor DarkYellow
             }
             'Maybe' {
-                Write-Host ('[MAYBE]  [{0}] {1}' -f $item.scope, $item.name) -ForegroundColor DarkYellow
+                Write-Host ('[MAYBE]  {0} {1}' -f $itemTags, $item.name) -ForegroundColor DarkYellow
                 Write-Host ('          Current: {0}' -f $result.CurrentSummary)
                 Write-Host ('          Maybe: {0}' -f $result.MaybeReason) -ForegroundColor DarkYellow
             }
             'NotApplicable' {
-                Write-Host ('[SKIP]   [{0}] {1}' -f $item.scope, $item.name) -ForegroundColor DarkGray
+                Write-Host ('[SKIP]   {0} {1}' -f $itemTags, $item.name) -ForegroundColor DarkGray
                 Write-Host ('          {0}' -f $result.CurrentSummary) -ForegroundColor DarkGray
             }
             'Deprecated' {
-                Write-Host ('[DEPRECATED] [{0}] {1}' -f $item.scope, $item.name) -ForegroundColor DarkGray
+                Write-Host ('[DEPRECATED] {0} {1}' -f $itemTags, $item.name) -ForegroundColor DarkGray
                 Write-Host ('             {0}' -f $result.CurrentSummary) -ForegroundColor DarkGray
             }
         }

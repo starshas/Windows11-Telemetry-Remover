@@ -1,4 +1,4 @@
-# Windows Telemetry Remover 1.0.0
+# Windows 11 Telemetry Remover 1.0.0
 
 Windows Telemetry Remover is a local, PowerShell-based audit and hardening tool for Windows 11 privacy-related telemetry, diagnostics, feedback, cloud search, sync, Office connected experiences, crash reporting, and similar data-exposure surfaces.
 
@@ -91,7 +91,32 @@ Before applying changes, the tool creates a timestamped backup folder under:
 C:\Users\Public\Documents\WindowsTelemetryRemoverBackups\<timestamp>
 ```
 
+Backups are intended for manual rollback and auditing. The tool does not currently provide a one-click restore action.
+
 Backups can include selected issue IDs, prior registry state, service state, scheduled-task XML, operation logs, and `change-history.jsonl`.
+
+Useful backup files:
+
+- `before-state.json` - audit status before applying selected fixes.
+- `change-history.jsonl` - executed operations, result status, and matching `enableCommands`.
+- `operations.log` - backup and fix operation log.
+- `registry-001.reg`, `registry-002.reg`, ... - exported registry keys before modification.
+- `services-before.csv` - service startup/state snapshot before modification.
+- `scheduled-tasks\task-001.xml` - scheduled task XML exported before modification.
+
+To manually restore an exported registry key, run an elevated PowerShell or Command Prompt and import the matching `.reg` file:
+
+```powershell
+reg import "C:\Users\Public\Documents\WindowsTelemetryRemoverBackups\<timestamp>\registry-001.reg"
+```
+
+To reverse a specific fix, inspect `change-history.jsonl` and run the relevant `enableCommands` entry. For example:
+
+```powershell
+Enable-ScheduledTask -TaskPath '\Microsoft\Windows\Customer Experience Improvement Program\' -TaskName 'Consolidator'
+```
+
+For service rollback, use `services-before.csv` to restore the previous startup mode and running/stopped state.
 
 Local ignored issues are stored in:
 
