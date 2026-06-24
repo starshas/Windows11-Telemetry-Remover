@@ -1,0 +1,2778 @@
+{
+  "schemaVersion": 1,
+  "databaseVersion": "2026.06.24",
+  "name": "Windows Telemetry Remover database",
+  "description": "Declarative checks and disable actions for Windows privacy-related services, policies, tasks, recommendations, feedback, synchronization, diagnostic upload, and crash reporting.",
+  "agentInstructions": [
+    "Keep every id stable, lowercase, and unique.",
+    "Use valid JSON without comments because Windows PowerShell 5.1 rejects JSON comments.",
+    "Do not place executable PowerShell in the database. Use only supported typed checks and actions.",
+    "Set exfiltration to yes, possible, or no for every item.",
+    "Set severity and severityReason for every item from an enterprise secret-protection perspective.",
+    "Set threatProofUrl, threatProofExactQuote, fixProofUrl, and fixProofExactQuote for every item.",
+    "fixProofExactQuote must prove the exact target state or command effect used by disableActions; do not use generic product documentation, policy index text, or quotes that only prove a related feature exists.",
+    "threatProofExactQuote must prove the threat itself: collection, transmission, cloud processing, synchronization, account linkage, stored sensitive material, or another concrete data-exposure mechanism; do not use quotes that only describe the fix, disabled state, or policy name.",
+    "Items should normally use one disableAction per proof; if multiple actions are grouped, threatProofExactQuote and fixProofExactQuote must clearly cover every action in the group.",
+    "Set enableActions for every item so users can see how to turn the Windows feature back on.",
+    "Review downsides before adding an item to disable-all behavior.",
+    "checkCommands are documentation for humans and agents; the engine does not execute them.",
+    "Set applicableWindowsEditions and applicabilityNote for every item; isApplicable is computed at runtime from the current Windows edition family."
+  ],
+  "items": [
+    {
+      "id": "service.diagtrack",
+      "name": "Connected User Experiences and Telemetry (DiagTrack)",
+      "category": "Telemetry service",
+      "scope": "machine",
+      "description": "Collects and routes Windows diagnostic and telemetry events according to the configured diagnostic-data level.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "diagnostic telemetry can include device, app, and managed-environment signals",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/configure-windows-diagnostic-data-in-your-organization",
+      "threatProofExactQuote": "Windows diagnostic data is vital technical data",
+      "fixProofUrl": "https://learn.microsoft.com/powershell/module/microsoft.powershell.management/set-service",
+      "fixProofExactQuote": "`Disabled` - The service is disabled and cannot be started by a user or application.",
+      "downsides": "Windows diagnostics, troubleshooting, Endpoint Analytics, and some managed-device reporting can become incomplete.",
+      "checkCommands": [
+        "Get-CimInstance Win32_Service -Filter \"Name='DiagTrack'\" | Select-Object Name, State, StartMode"
+      ],
+      "checks": [
+        {
+          "type": "serviceDisabled",
+          "name": "DiagTrack"
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "disableService",
+          "name": "DiagTrack"
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "enableService",
+          "name": "DiagTrack",
+          "startupType": "Automatic"
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/privacy/configure-windows-diagnostic-data-in-your-organization"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where the DiagTrack service exists"
+    },
+    {
+      "id": "service.dmwappushservice",
+      "name": "Device Management WAP Push routing service",
+      "category": "Device management service",
+      "scope": "machine",
+      "description": "Routes Wireless Application Protocol push messages used by Windows device-management scenarios.",
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "device-management traffic can expose management state in enrolled environments",
+      "threatProofUrl": "https://learn.microsoft.com/troubleshoot/mem/intune/cannot-sync-windows-10-devices",
+      "threatProofExactQuote": "The dmwappushservice service is required on client devices",
+      "fixProofUrl": "https://learn.microsoft.com/powershell/module/microsoft.powershell.management/set-service",
+      "fixProofExactQuote": "`Disabled` - The service is disabled and cannot be started by a user or application.",
+      "downsides": "Microsoft Intune, mobile-device management, work or school management, and remote policy delivery can stop working correctly.",
+      "checkCommands": [
+        "Get-CimInstance Win32_Service -Filter \"Name='dmwappushservice'\" | Select-Object Name, State, StartMode"
+      ],
+      "checks": [
+        {
+          "type": "serviceDisabled",
+          "name": "dmwappushservice"
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "disableService",
+          "name": "dmwappushservice"
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "enableService",
+          "name": "dmwappushservice",
+          "startupType": "Manual"
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/troubleshoot/mem/intune/cannot-sync-windows-10-devices"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where the dmwappushservice service exists; mainly relevant to managed/MDM devices"
+    },
+    {
+      "id": "windows-error-reporting",
+      "name": "Windows Error Reporting",
+      "category": "Crash reporting",
+      "scope": "machine",
+      "description": "Collects information about application, operating-system, and hardware failures and can send reports to Microsoft.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "crash reports can include process, module, and failure-context details",
+      "threatProofUrl": "https://learn.microsoft.com/windows/win32/wer/windows-error-reporting",
+      "threatProofExactQuote": "enables users to notify Microsoft of application faults, kernel faults, unresponsive applications, and other application specific problems",
+      "fixProofUrl": "https://learn.microsoft.com/powershell/module/windowserrorreporting/disable-windowserrorreporting",
+      "fixProofExactQuote": "The Disable-WindowsErrorReporting cmdlet disables Windows Error Reporting",
+      "downsides": "Automatic crash reporting, online problem solutions, and some diagnostic workflows will no longer work.",
+      "checkCommands": [
+        "Get-WindowsErrorReporting",
+        "Get-CimInstance Win32_Service -Filter \"Name='WerSvc'\" | Select-Object Name, State, StartMode"
+      ],
+      "checks": [
+        {
+          "type": "werDisabled"
+        },
+        {
+          "type": "serviceDisabled",
+          "name": "WerSvc"
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting",
+          "name": "Disabled",
+          "value": 1,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "disableWer"
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting",
+          "name": "Disabled",
+          "value": 1
+        },
+        {
+          "type": "disableService",
+          "name": "WerSvc"
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "enableWer"
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting",
+          "name": "Disabled",
+          "value": 0
+        },
+        {
+          "type": "enableService",
+          "name": "WerSvc",
+          "startupType": "Manual"
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/powershell/module/windowserrorreporting/disable-windowserrorreporting"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where Windows Error Reporting is available"
+    },
+    {
+      "id": "local-dumps.machine",
+      "name": "Machine-wide local crash-dump collection",
+      "category": "Crash dumps",
+      "scope": "machine",
+      "description": "Windows Error Reporting LocalDumps registry keys can create local process dump files after application crashes.",
+      "exfiltration": "yes",
+      "severity": "medium",
+      "severityReason": "local dumps can stage process memory with credentials or proprietary data for later collection, upload, or support-bundle exfiltration",
+      "threatProofUrl": "https://learn.microsoft.com/windows/win32/wer/collecting-user-mode-dumps",
+      "threatProofExactQuote": "full user-mode dumps are collected and stored locally after a user-mode application crashes",
+      "fixProofUrl": "https://learn.microsoft.com/windows/win32/wer/collecting-user-mode-dumps",
+      "fixProofExactQuote": "This feature is not enabled by default. To enable and configure the feature, use the following registry values under the HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps key.",
+      "downsides": "Local crash dumps will not be generated for debugging applications and native crashes.",
+      "checkCommands": [
+        "Test-Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps'",
+        "Test-Path 'HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps'"
+      ],
+      "checks": [
+        {
+          "type": "registryKeyAbsent",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps"
+        },
+        {
+          "type": "registryKeyAbsent",
+          "path": "HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps"
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "removeRegistryKey",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps"
+        },
+        {
+          "type": "removeRegistryKey",
+          "path": "HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps"
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "createRegistryKey",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps"
+        },
+        {
+          "type": "createRegistryKey",
+          "path": "HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps"
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/win32/wer/collecting-user-mode-dumps"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where WER LocalDumps registry configuration is supported"
+    },
+    {
+      "id": "policy.diagnostic-data",
+      "name": "Diagnostic-data policy is not forced to the lowest requested level",
+      "category": "Diagnostic-data policy",
+      "scope": "machine",
+      "description": "Configures the Windows diagnostic-data policy value through the documented policy path and the legacy CurrentVersion\\Policies fallback path. A value of 0 requests the lowest policy level, although Home and Pro editions may enforce a higher minimum.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "higher diagnostic levels can send more system and usage data externally",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/configure-windows-diagnostic-data-in-your-organization",
+      "threatProofExactQuote": "Windows diagnostic data is vital technical data",
+      "fixProofUrl": "https://learn.microsoft.com/windows/privacy/configure-windows-diagnostic-data-in-your-organization",
+      "fixProofExactQuote": "Category Value Diagnostic data off (Security) 0",
+      "downsides": "Some diagnostics, Insider features, managed analytics, and troubleshooting information can become unavailable. Windows edition rules may prevent true zero telemetry.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name AllowTelemetry -ErrorAction SilentlyContinue",
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection' -Name AllowTelemetry -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowTelemetry",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection",
+          "name": "AllowTelemetry",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowTelemetry",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection",
+          "name": "AllowTelemetry",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowTelemetry",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection",
+          "name": "AllowTelemetry",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/privacy/configure-windows-diagnostic-data-in-your-organization",
+        "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "AllowTelemetry exists on supported Windows editions, but value 0 is only fully effective on Enterprise, Education, IoT Enterprise, and Server editions; Home and Pro can enforce a higher minimum"
+    },
+    {
+      "id": "policy.onesettings-downloads",
+      "name": "OneSettings downloads are not disabled",
+      "category": "Windows configuration service",
+      "scope": "machine",
+      "description": "Prevents Windows from periodically connecting to the OneSettings service to download configuration settings.",
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "OneSettings is a Microsoft configuration service connection path that can reveal device configuration state and receive remote configuration",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "threatProofExactQuote": "Windows will periodically attempt to connect with the OneSettings service to download configuration settings.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "fixProofExactQuote": "1 Disabled.",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "Windows may stop receiving Microsoft-delivered configuration updates that rely on OneSettings.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'DisableOneSettingsDownloads' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "DisableOneSettingsDownloads",
+          "value": 1,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "DisableOneSettingsDownloads",
+          "value": 1
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "DisableOneSettingsDownloads",
+          "value": 0
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP support: device scope on Pro, Enterprise, Education, and IoT Enterprise for Windows 11 21H2 and later"
+    },
+    {
+      "id": "policy.device-name-diagnostic-data",
+      "name": "Device name is allowed in Windows diagnostic data",
+      "category": "Diagnostic data identity",
+      "scope": "machine",
+      "description": "Prevents Windows from sending the device name to Microsoft as part of Windows diagnostic data.",
+      "exfiltration": "yes",
+      "severity": "medium",
+      "severityReason": "device names can disclose host naming schemes, user names, department names, or internal asset identifiers",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "threatProofExactQuote": "This policy allows the device name to be sent to Microsoft as part of Windows diagnostic data.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "fixProofExactQuote": "0 (Default) Disabled.",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "Managed diagnostic portals and support workflows may lose a direct device-name identifier.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'AllowDeviceNameInDiagnosticData' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowDeviceNameInDiagnosticData",
+          "value": 0,
+          "missingIsIssue": false
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowDeviceNameInDiagnosticData",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowDeviceNameInDiagnosticData",
+          "value": 1
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP support: device scope on Pro, Enterprise, Education, and IoT Enterprise"
+    },
+    {
+      "id": "policy.find-my-device",
+      "name": "Find My Device is not disabled by policy",
+      "category": "Device location and recovery",
+      "scope": "machine",
+      "description": "Disables Find My Device so Windows cannot register the device for Microsoft-account device location lookup.",
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "Find My Device can associate a device with account-based location lookup and recovery workflows",
+      "threatProofUrl": "https://www.microsoft.com/en-us/privacy/privacystatement",
+      "threatProofExactQuote": "locate, and lock your Windows device from account.microsoft.com/devices",
+      "fixProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "fixProofExactQuote": "AllowFindMyDevice to 0 (zero)",
+      "downsides": "You will not be able to locate, lock, or recover the device through Microsoft's Find My Device workflow if it is lost.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\FindMyDevice' -Name 'AllowFindMyDevice' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\FindMyDevice",
+          "name": "AllowFindMyDevice",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\FindMyDevice",
+          "name": "AllowFindMyDevice",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\FindMyDevice",
+          "name": "AllowFindMyDevice",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows client editions"
+      ],
+      "applicabilityNote": "applies where the Find My Device Windows policy is supported; not applicable to Windows Server"
+    },
+    {
+      "id": "policy.desktop-analytics-processing",
+      "name": "Desktop Analytics diagnostic-data processing is enabled",
+      "category": "Enterprise diagnostic processing",
+      "scope": "machine",
+      "description": "Detects an explicit policy allowing Desktop Analytics processing of Windows diagnostic data.",
+      "deprecatedAfterWindowsBuild": 17763,
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "enterprise analytics processing depends on Windows diagnostic data collected from the device",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "threatProofExactQuote": "Windows diagnostic data collected from the device will be subject to Microsoft processor commitments.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "fixProofExactQuote": "0 (Default) Disabled.",
+      "downsides": "Devices enrolled in Desktop Analytics may stop appearing or lose analytics processing.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'AllowDesktopAnalyticsProcessing' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowDesktopAnalyticsProcessing",
+          "value": 0,
+          "missingIsIssue": false
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowDesktopAnalyticsProcessing",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowDesktopAnalyticsProcessing",
+          "value": 2
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "deprecated enterprise policy; absent values are treated as fixed, including on Home"
+    },
+    {
+      "id": "policy.update-compliance-processing",
+      "name": "Update Compliance diagnostic-data processing is enabled",
+      "category": "Enterprise diagnostic processing",
+      "scope": "machine",
+      "description": "Detects an explicit policy allowing Update Compliance processing of Windows diagnostic data.",
+      "deprecatedAfterWindowsBuild": 17763,
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "Update Compliance processing depends on Windows diagnostic data collected from the device",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "threatProofExactQuote": "Windows diagnostic data collected from the device will be subject to Microsoft processor commitments.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "fixProofExactQuote": "0 (Default) Disabled.",
+      "downsides": "Devices enrolled in Update Compliance may stop appearing or lose compliance reporting.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'AllowUpdateComplianceProcessing' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowUpdateComplianceProcessing",
+          "value": 0,
+          "missingIsIssue": false
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowUpdateComplianceProcessing",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowUpdateComplianceProcessing",
+          "value": 16
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "deprecated enterprise policy; absent values are treated as fixed, including on Home"
+    },
+    {
+      "id": "policy.wufb-cloud-processing",
+      "name": "Windows Update for Business cloud processing is enabled",
+      "category": "Enterprise diagnostic processing",
+      "scope": "machine",
+      "description": "Detects an explicit policy allowing Windows Update for Business cloud processing of Windows diagnostic data.",
+      "deprecatedAfterWindowsBuild": 17763,
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "Windows Update for Business cloud processing depends on Windows diagnostic data collected from the device",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "threatProofExactQuote": "Windows diagnostic data collected from the device will be subject to Microsoft processor commitments.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "fixProofExactQuote": "0 (Default) Disabled.",
+      "downsides": "Devices enrolled in Windows Update for Business deployment service may lose cloud deployment-service features.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'AllowWUfBCloudProcessing' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowWUfBCloudProcessing",
+          "value": 0,
+          "missingIsIssue": false
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowWUfBCloudProcessing",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "AllowWUfBCloudProcessing",
+          "value": 8
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "deprecated enterprise policy; absent values are treated as fixed, including on Home"
+    },
+    {
+      "id": "policy.tailored-experiences",
+      "name": "Tailored experiences effective state",
+      "category": "Personalized recommendations",
+      "scope": "machine",
+      "description": "Prevents Windows from using diagnostic data to provide tailored tips, advertisements, and recommendations.",
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "recommendation personalization depends on diagnostic or usage signals",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "threatProofExactQuote": "tailored experiences with relevant tips and recommendations",
+      "fixProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "fixProofExactQuote": "Turn off tailored experiences with relevant tips and recommendations",
+      "downsides": "Personalized Windows tips and recommendations can become less relevant or disappear.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent' -Name DisableTailoredExperiencesWithDiagnosticData -ErrorAction SilentlyContinue",
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Privacy' -Name TailoredExperiencesWithDiagnosticDataEnabled -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "tailoredExperiencesDisabled"
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+          "name": "DisableTailoredExperiencesWithDiagnosticData",
+          "value": 1
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\CloudContent",
+          "name": "DisableTailoredExperiencesWithDiagnosticData",
+          "value": 0
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "machine policy and current-user setting availability can vary by Windows release"
+    },
+    {
+      "id": "policy.advertising-id",
+      "name": "Advertising ID is not disabled",
+      "category": "Advertising identifier",
+      "scope": "machine",
+      "description": "Disables the Windows advertising identifier by machine policy and legacy runtime setting for applications that use it.",
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "advertising identifiers can correlate app activity across contexts",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-privacy",
+      "threatProofExactQuote": "users can control whether apps can use the advertising ID for experiences across apps",
+      "fixProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "fixProofExactQuote": "If you enable this policy setting, the advertising ID is turned off. | Create a REG_DWORD registry setting named Enabled in HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo with a value of 0",
+      "downsides": "Advertisements and app recommendations may be less personalized.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\AdvertisingInfo' -Name DisabledByGroupPolicy -ErrorAction SilentlyContinue",
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name Enabled -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\AdvertisingInfo",
+          "name": "DisabledByGroupPolicy",
+          "value": 1,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo",
+          "name": "Enabled",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\AdvertisingInfo",
+          "name": "DisabledByGroupPolicy",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo",
+          "name": "Enabled",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\AdvertisingInfo",
+          "name": "DisabledByGroupPolicy",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo",
+          "name": "Enabled",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-privacy",
+        "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "uses both machine policy and legacy runtime AdvertisingInfo values; the legacy value is applicable on Home"
+    },
+    {
+      "id": "policy.activity-history",
+      "name": "Activity history and activity upload are not disabled by policy",
+      "category": "Activity history",
+      "scope": "machine",
+      "description": "Disables the Windows activity feed and prevents applications from publishing or uploading user activities.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "activity history can expose application and workflow patterns across devices",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-privacy",
+      "threatProofExactQuote": "ActivityFeed shall roam these activities across device graph",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-privacy",
+      "fixProofExactQuote": "0 Disabled. Apps/OS can't publish the activities",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "Cross-device activity, some recent-activity experiences, and parts of Windows Backup or managed activity reporting can stop working.",
+      "checkCommands": [
+        "Get-ItemProperty -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System' -ErrorAction SilentlyContinue | Select-Object EnableActivityFeed, PublishUserActivities, UploadUserActivities"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "EnableActivityFeed",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "PublishUserActivities",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "UploadUserActivities",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "EnableActivityFeed",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "PublishUserActivities",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "UploadUserActivities",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "EnableActivityFeed",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "PublishUserActivities",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "UploadUserActivities",
+          "value": 1
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP support: device scope on Pro, Enterprise, Education, and IoT Enterprise"
+    },
+    {
+      "id": "policy.cloud-clipboard",
+      "name": "Cloud Clipboard synchronization is not disabled by policy",
+      "category": "Cross-device clipboard",
+      "scope": "machine",
+      "description": "Disables cross-device clipboard synchronization so copied clipboard items cannot roam through Microsoft's cloud clipboard service.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "clipboard content can contain credentials, secrets, tokens, document fragments, or proprietary data and can be uploaded to the cloud when roaming is allowed",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "threatProofExactQuote": "an item copied to the clipboard is uploaded to the cloud",
+      "fixProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "fixProofExactQuote": "0 \u2013 Not allowed",
+      "downsides": "Clipboard synchronization across Windows devices stops working. Local clipboard copy and paste remains available.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System' -Name 'AllowCrossDeviceClipboard' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "AllowCrossDeviceClipboard",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "AllowCrossDeviceClipboard",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+          "name": "AllowCrossDeviceClipboard",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "ADMX policy is machine-scoped and supported on Windows 10 and later"
+    },
+    {
+      "id": "policy.input-personalization",
+      "name": "Input personalization is not disabled by machine policy",
+      "category": "Typing, inking, and personalization",
+      "scope": "machine",
+      "description": "Disables automatic input personalization by machine policy.",
+      "exfiltration": "possible",
+      "severity": "high",
+      "severityReason": "typing and inking personalization can involve sensitive input-derived signals",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-privacy",
+      "threatProofExactQuote": "Microsoft uses voice input to help improve speech services.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-privacy",
+      "fixProofExactQuote": "0 Not allowed.",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "Typing, handwriting, and language personalization can become less accurate.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\InputPersonalization' -Name AllowInputPersonalization -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\InputPersonalization",
+          "name": "AllowInputPersonalization",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\InputPersonalization",
+          "name": "AllowInputPersonalization",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\InputPersonalization",
+          "name": "AllowInputPersonalization",
+          "value": 1
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP support: device scope on Pro, Enterprise, Education, and IoT Enterprise"
+    },
+    {
+      "id": "user.inking-typing-implicit-collection",
+      "name": "Current-user inking, typing, and personalization collection is not restricted",
+      "category": "Typing, inking, and personalization",
+      "scope": "user",
+      "description": "Restricts current-user implicit text, ink, inking/typing recognition, and contact harvesting settings used by Windows inking and typing personalization.",
+      "exfiltration": "possible",
+      "severity": "high",
+      "severityReason": "implicit text and ink collection can involve sensitive typed or handwritten input-derived signals",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "threatProofExactQuote": "To turn off Inking & Typing data collection",
+      "fixProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "fixProofExactQuote": "Set RestrictImplicitTextCollection registry REG_DWORD setting to a value of 1 | Set RestrictImplicitInkCollection registry REG_DWORD setting to a value of 1",
+      "downsides": "Typing, handwriting, contact-based handwriting personalization, and language personalization can become less accurate for the current user.",
+      "checkCommands": [
+        "Get-ItemProperty -LiteralPath 'HKCU:\\Software\\Microsoft\\InputPersonalization' -ErrorAction SilentlyContinue | Select-Object RestrictImplicitTextCollection, RestrictImplicitInkCollection",
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Microsoft\\Input\\TIPC' -Name Enabled -ErrorAction SilentlyContinue",
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Microsoft\\InputPersonalization\\TrainedDataStore' -Name HarvestContacts -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\InputPersonalization",
+          "name": "RestrictImplicitTextCollection",
+          "value": 1,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\InputPersonalization",
+          "name": "RestrictImplicitInkCollection",
+          "value": 1,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Input\\TIPC",
+          "name": "Enabled",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\InputPersonalization\\TrainedDataStore",
+          "name": "HarvestContacts",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\InputPersonalization",
+          "name": "RestrictImplicitTextCollection",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\InputPersonalization",
+          "name": "RestrictImplicitInkCollection",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Input\\TIPC",
+          "name": "Enabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\InputPersonalization\\TrainedDataStore",
+          "name": "HarvestContacts",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\InputPersonalization",
+          "name": "RestrictImplicitTextCollection",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\InputPersonalization",
+          "name": "RestrictImplicitInkCollection",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Input\\TIPC",
+          "name": "Enabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\InputPersonalization\\TrainedDataStore",
+          "name": "HarvestContacts",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "current-user Windows privacy setting; exact UI availability can vary by Windows release"
+    },
+    {
+      "id": "user.feedback-and-speech",
+      "name": "Current-user feedback frequency or online speech privacy",
+      "category": "Feedback and online speech",
+      "scope": "user",
+      "description": "Suppresses feedback requests and records that online speech recognition has not been accepted for the current account.",
+      "exfiltration": "yes",
+      "severity": "urgent",
+      "severityReason": "online speech services can process spoken content that may contain confidential material",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-privacy",
+      "threatProofExactQuote": "Microsoft uses voice input to help improve speech services.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-privacy",
+      "fixProofExactQuote": "speech services will be disabled",
+      "downsides": "Cloud-based speech recognition, dictation, and voice features that depend on online speech services can stop working.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Microsoft\\Siuf\\Rules' -Name NumberOfSIUFInPeriod -ErrorAction SilentlyContinue",
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Microsoft\\Speech_OneCore\\Settings\\OnlineSpeechPrivacy' -Name HasAccepted -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Siuf\\Rules",
+          "name": "NumberOfSIUFInPeriod",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Speech_OneCore\\Settings\\OnlineSpeechPrivacy",
+          "name": "HasAccepted",
+          "value": 0,
+          "missingIsIssue": false
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Siuf\\Rules",
+          "name": "NumberOfSIUFInPeriod",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Speech_OneCore\\Settings\\OnlineSpeechPrivacy",
+          "name": "HasAccepted",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Siuf\\Rules",
+          "name": "NumberOfSIUFInPeriod",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Speech_OneCore\\Settings\\OnlineSpeechPrivacy",
+          "name": "HasAccepted",
+          "value": 1
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where current-user speech privacy settings are present"
+    },
+    {
+      "id": "user.content-delivery",
+      "name": "Windows content delivery, suggested apps, or Spotlight",
+      "category": "Recommendations and promoted content",
+      "scope": "user",
+      "description": "Disables Windows content delivery, system suggestions, promoted or silently delivered apps, and Windows Spotlight for the current account.",
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "content delivery and suggestions can use profile, device, or usage context",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-experience",
+      "threatProofExactQuote": "daily images from Microsoft displayed on their desktop",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-experience",
+      "fixProofExactQuote": "Spotlight collection won't show as an option",
+      "downsides": "Windows Spotlight images, lock-screen tips, promoted apps, setup suggestions, and some recommendation content will disappear.",
+      "checkCommands": [
+        "Get-ItemProperty -LiteralPath 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager' -ErrorAction SilentlyContinue | Select-Object ContentDeliveryAllowed, SystemPaneSuggestionsEnabled, OemPreInstalledAppsEnabled, PreInstalledAppsEnabled, SilentInstalledAppsEnabled, RotatingLockScreenEnabled, RotatingLockScreenOverlayEnabled, SubscribedContent-*"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "ContentDeliveryAllowed",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SystemPaneSuggestionsEnabled",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "OemPreInstalledAppsEnabled",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "PreInstalledAppsEnabled",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SilentInstalledAppsEnabled",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "RotatingLockScreenEnabled",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "RotatingLockScreenOverlayEnabled",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-338388Enabled",
+          "value": 0,
+          "missingIsIssue": false
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-338389Enabled",
+          "value": 0,
+          "missingIsIssue": false
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-338393Enabled",
+          "value": 0,
+          "missingIsIssue": false
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-353694Enabled",
+          "value": 0,
+          "missingIsIssue": false
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-353696Enabled",
+          "value": 0,
+          "missingIsIssue": false
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-88000326Enabled",
+          "value": 0,
+          "missingIsIssue": false
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "ContentDeliveryAllowed",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SystemPaneSuggestionsEnabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "OemPreInstalledAppsEnabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "PreInstalledAppsEnabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SilentInstalledAppsEnabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "RotatingLockScreenEnabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "RotatingLockScreenOverlayEnabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-338388Enabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-338389Enabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-338393Enabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-353694Enabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-353696Enabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-88000326Enabled",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "ContentDeliveryAllowed",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SystemPaneSuggestionsEnabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "OemPreInstalledAppsEnabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "PreInstalledAppsEnabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SilentInstalledAppsEnabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "RotatingLockScreenEnabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "RotatingLockScreenOverlayEnabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-338388Enabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-338389Enabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-338393Enabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-353694Enabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-353696Enabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager",
+          "name": "SubscribedContent-88000326Enabled",
+          "value": 1
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "current-user ContentDeliveryManager values are applicable on Home; policy-backed CloudContent values should be modeled separately"
+    },
+    {
+      "id": "task.compatibility-appraiser",
+      "name": "Microsoft Compatibility Appraiser scheduled task",
+      "category": "Compatibility telemetry",
+      "scope": "machine",
+      "description": "Runs CompatTelRunner to inventory applications, drivers, and hardware for Windows compatibility and upgrade assessment.",
+      "exfiltration": "yes",
+      "severity": "medium",
+      "severityReason": "compatibility inventory can disclose installed software, drivers, and hardware, but its primary purpose is upgrade compatibility assessment",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "threatProofExactQuote": "components make network connections to Microsoft services by default",
+      "fixProofUrl": "https://learn.microsoft.com/powershell/module/scheduledtasks/disable-scheduledtask",
+      "fixProofExactQuote": "The `Disable-ScheduledTask` cmdlet disables a scheduled task.",
+      "downsides": "Windows may assess feature-update compatibility and safeguard holds less effectively. Re-enable before a major Windows version upgrade if necessary.",
+      "checkCommands": [
+        "Get-ScheduledTask -TaskPath '\\Microsoft\\Windows\\Application Experience\\' -TaskName 'Microsoft Compatibility Appraiser Exp' | Select-Object TaskPath, TaskName, State, @{Name='Enabled';Expression={$_.Settings.Enabled}}"
+      ],
+      "checks": [
+        {
+          "type": "scheduledTaskDisabled",
+          "taskPath": "\\Microsoft\\Windows\\Application Experience\\",
+          "taskName": "Microsoft Compatibility Appraiser Exp"
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "disableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Application Experience\\",
+          "taskName": "Microsoft Compatibility Appraiser Exp"
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "enableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Application Experience\\",
+          "taskName": "Microsoft Compatibility Appraiser Exp"
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where the scheduled task exists"
+    },
+    {
+      "id": "tasks.ceip",
+      "name": "Customer Experience Improvement Program scheduled tasks",
+      "category": "Usage and device telemetry",
+      "scope": "machine",
+      "description": "Consolidator and UsbCeip collect or consolidate Customer Experience Improvement Program information, including USB-device experience data.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "CEIP data can reveal usage and device experience information",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "threatProofExactQuote": "components make network connections to Microsoft services by default",
+      "fixProofUrl": "https://learn.microsoft.com/powershell/module/scheduledtasks/disable-scheduledtask",
+      "fixProofExactQuote": "The `Disable-ScheduledTask` cmdlet disables a scheduled task.",
+      "downsides": "",
+      "checkCommands": [
+        "Get-ScheduledTask -TaskPath '\\Microsoft\\Windows\\Customer Experience Improvement Program\\' -TaskName Consolidator,UsbCeip | Select-Object TaskPath, TaskName, State, @{Name='Enabled';Expression={$_.Settings.Enabled}}"
+      ],
+      "checks": [
+        {
+          "type": "scheduledTaskDisabled",
+          "taskPath": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+          "taskName": "Consolidator"
+        },
+        {
+          "type": "scheduledTaskDisabled",
+          "taskPath": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+          "taskName": "UsbCeip"
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "disableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+          "taskName": "Consolidator"
+        },
+        {
+          "type": "disableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+          "taskName": "UsbCeip"
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "enableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+          "taskName": "Consolidator"
+        },
+        {
+          "type": "enableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Customer Experience Improvement Program\\",
+          "taskName": "UsbCeip"
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where these scheduled tasks exist"
+    },
+    {
+      "id": "tasks.feedback-siuf",
+      "name": "System Initiated User Feedback scheduled tasks",
+      "category": "Feedback",
+      "scope": "machine",
+      "description": "DmClient tasks download and run system-initiated feedback scenarios.",
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "feedback scenarios may collect or request contextual system information",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "threatProofExactQuote": "components make network connections to Microsoft services by default",
+      "fixProofUrl": "https://learn.microsoft.com/powershell/module/scheduledtasks/disable-scheduledtask",
+      "fixProofExactQuote": "The `Disable-ScheduledTask` cmdlet disables a scheduled task.",
+      "downsides": "Automatic Windows feedback prompts and some organization-managed feedback scenarios can stop working.",
+      "checkCommands": [
+        "Get-ScheduledTask -TaskPath '\\Microsoft\\Windows\\Feedback\\Siuf\\' -TaskName DmClient,DmClientOnScenarioDownload | Select-Object TaskPath, TaskName, State, @{Name='Enabled';Expression={$_.Settings.Enabled}}"
+      ],
+      "checks": [
+        {
+          "type": "scheduledTaskDisabled",
+          "taskPath": "\\Microsoft\\Windows\\Feedback\\Siuf\\",
+          "taskName": "DmClient"
+        },
+        {
+          "type": "scheduledTaskDisabled",
+          "taskPath": "\\Microsoft\\Windows\\Feedback\\Siuf\\",
+          "taskName": "DmClientOnScenarioDownload"
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "disableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Feedback\\Siuf\\",
+          "taskName": "DmClient"
+        },
+        {
+          "type": "disableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Feedback\\Siuf\\",
+          "taskName": "DmClientOnScenarioDownload"
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "enableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Feedback\\Siuf\\",
+          "taskName": "DmClient"
+        },
+        {
+          "type": "enableScheduledTask",
+          "taskPath": "\\Microsoft\\Windows\\Feedback\\Siuf\\",
+          "taskName": "DmClientOnScenarioDownload"
+        }
+      ],
+      "references": [],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where these scheduled tasks exist"
+    },
+    {
+      "id": "defender.cloud-and-samples",
+      "name": "Microsoft Defender cloud protection or sample submission is enabled",
+      "category": "Defender cloud protection and sample submission",
+      "scope": "machine",
+      "description": "Disables Microsoft Defender cloud/MAPS reporting, automatic sample submission, Block at First Seen, and high cloud blocking levels.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "cloud protection and sample submission can send file metadata or suspicious files to Microsoft",
+      "threatProofUrl": "https://learn.microsoft.com/powershell/module/defender/set-mppreference",
+      "threatProofExactQuote": "scan it in the cloud",
+      "fixProofUrl": "https://learn.microsoft.com/powershell/module/defender/set-mppreference",
+      "fixProofExactQuote": "0: Disabled. Send no information to Microsoft. This is the default value.",
+      "downsides": "Microsoft Defender cloud-delivered protection, Block at First Seen, and automatic cloud analysis can become less effective.",
+      "checkCommands": [
+        "Get-MpPreference | Select-Object MAPSReporting, SubmitSamplesConsent, DisableBlockAtFirstSeen, CloudBlockLevel | Format-List"
+      ],
+      "checks": [
+        {
+          "type": "mpPreferenceEquals",
+          "name": "MAPSReporting",
+          "value": 0
+        },
+        {
+          "type": "mpPreferenceEquals",
+          "name": "SubmitSamplesConsent",
+          "value": 2
+        },
+        {
+          "type": "mpPreferenceEquals",
+          "name": "DisableBlockAtFirstSeen",
+          "value": true
+        },
+        {
+          "type": "mpPreferenceEquals",
+          "name": "CloudBlockLevel",
+          "value": 0
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setMpPreference",
+          "name": "MAPSReporting",
+          "value": 0
+        },
+        {
+          "type": "setMpPreference",
+          "name": "SubmitSamplesConsent",
+          "value": 2
+        },
+        {
+          "type": "setMpPreference",
+          "name": "DisableBlockAtFirstSeen",
+          "value": true
+        },
+        {
+          "type": "setMpPreference",
+          "name": "CloudBlockLevel",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setMpPreference",
+          "name": "MAPSReporting",
+          "value": 1
+        },
+        {
+          "type": "setMpPreference",
+          "name": "SubmitSamplesConsent",
+          "value": 0
+        },
+        {
+          "type": "setMpPreference",
+          "name": "DisableBlockAtFirstSeen",
+          "value": false
+        },
+        {
+          "type": "setMpPreference",
+          "name": "CloudBlockLevel",
+          "value": 0
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/powershell/module/defender/get-mppreference",
+        "https://learn.microsoft.com/powershell/module/defender/set-mppreference"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where Microsoft Defender Antivirus and Set-MpPreference are available"
+    },
+    {
+      "id": "policy.defender-maps-and-samples",
+      "name": "Microsoft Defender MAPS or sample submission is not disabled by policy",
+      "category": "Defender cloud protection and sample submission",
+      "scope": "machine",
+      "description": "Disables Microsoft Defender MAPS cloud reporting and file sample submission using machine policy registry values.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "Defender MAPS and sample submission can send cloud protection telemetry or file samples to Microsoft",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "threatProofExactQuote": "You can disconnect from the Microsoft Antimalware Protection Service. | You can stop sending file samples back to Microsoft.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "fixProofExactQuote": "SpyNetReporting to 0 (zero) | SubmitSamplesConsent to 2 (two) for Never Send.",
+      "manualWhenTamperProtected": true,
+      "downsides": "Microsoft Defender cloud-delivered protection and automatic sample analysis become less effective. Tamper Protection can prevent changing these policy-backed settings until it is turned off.",
+      "checkCommands": [
+        "Get-ItemProperty -LiteralPath 'HKLM:\\Software\\Policies\\Microsoft\\Windows Defender\\Spynet' -ErrorAction SilentlyContinue | Select-Object SpyNetReporting, SubmitSamplesConsent"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\Software\\Policies\\Microsoft\\Windows Defender\\Spynet",
+          "name": "SpyNetReporting",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\Software\\Policies\\Microsoft\\Windows Defender\\Spynet",
+          "name": "SubmitSamplesConsent",
+          "value": 2,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\Software\\Policies\\Microsoft\\Windows Defender\\Spynet",
+          "name": "SpyNetReporting",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\Software\\Policies\\Microsoft\\Windows Defender\\Spynet",
+          "name": "SubmitSamplesConsent",
+          "value": 2
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\Software\\Policies\\Microsoft\\Windows Defender\\Spynet",
+          "name": "SpyNetReporting",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\Software\\Policies\\Microsoft\\Windows Defender\\Spynet",
+          "name": "SubmitSamplesConsent",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where Microsoft Defender Antivirus policy registry values are honored; Tamper Protection may block changes"
+    },
+    {
+      "id": "policy.msrt-reporting",
+      "name": "Malicious Software Removal Tool reporting is not disabled",
+      "category": "MSRT diagnostic reporting",
+      "scope": "machine",
+      "description": "Disables Malicious Software Removal Tool diagnostic infection reporting to Microsoft.",
+      "exfiltration": "yes",
+      "severity": "medium",
+      "severityReason": "MSRT reporting can disclose malware detection and infection context from the device",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "threatProofExactQuote": "You can turn off Malicious Software Reporting Tool (MSRT) diagnostic data",
+      "fixProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "fixProofExactQuote": "DontReportInfectionInformation to 1.",
+      "downsides": "Microsoft receives less infection reporting from MSRT, which can reduce malware prevalence telemetry and related protection insights.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\Software\\Policies\\Microsoft\\MRT' -Name 'DontReportInfectionInformation' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\Software\\Policies\\Microsoft\\MRT",
+          "name": "DontReportInfectionInformation",
+          "value": 1,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\Software\\Policies\\Microsoft\\MRT",
+          "name": "DontReportInfectionInformation",
+          "value": 1
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\Software\\Policies\\Microsoft\\MRT",
+          "name": "DontReportInfectionInformation",
+          "value": 0
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where the Malicious Software Removal Tool policy registry value is honored"
+    },
+    {
+      "id": "windows-search.cloud-sources",
+      "name": "Windows Search cloud sources are allowed",
+      "category": "Search and search-linked cloud features",
+      "scope": "machine",
+      "description": "Prevents Windows Search and Cortana from searching cloud sources such as OneDrive and SharePoint.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "cloud search can expose account-connected content lookups and cloud-source query context",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search",
+      "threatProofExactQuote": "search cloud sources like OneDrive and SharePoint",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search",
+      "fixProofExactQuote": "0 Not allowed.",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "Windows Search will stop showing cloud-backed results from OneDrive, SharePoint, or account-connected sources.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search' -Name 'AllowCloudSearch' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "AllowCloudSearch",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "AllowCloudSearch",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "AllowCloudSearch",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search"
+      ],
+      "applicableWindowsEditions": [
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP Search/AllowCloudSearch lists device scope for Enterprise, Education, and IoT Enterprise"
+    },
+    {
+      "id": "windows-search.web-results",
+      "name": "Windows Search web results are allowed",
+      "category": "Search and search-linked cloud features",
+      "scope": "machine",
+      "description": "Prevents Windows Search from performing web queries and showing web results.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "web search integration can send typed search terms and search context to web services",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search",
+      "threatProofExactQuote": "queries will be performed on the web and web results will be displayed",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search",
+      "fixProofExactQuote": "0 Not allowed. Queries won't be performed on the web and web results won't be displayed when a user performs a query in Search.",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "Web results disappear from Windows Search; local file, app, and settings search remains available.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search' -Name 'ConnectedSearchUseWeb' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "ConnectedSearchUseWeb",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "ConnectedSearchUseWeb",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "ConnectedSearchUseWeb",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search"
+      ],
+      "applicableWindowsEditions": [
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP Search/DoNotUseWebResults is not listed for Pro"
+    },
+    {
+      "id": "windows-search.location",
+      "name": "Windows Search can use location",
+      "category": "Search and search-linked cloud features",
+      "scope": "machine",
+      "description": "Prevents Search and Cortana from using location for location-aware results.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "location-aware search can expose location context through search-related services",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search",
+      "threatProofExactQuote": "search and Cortana can access location information",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search",
+      "fixProofExactQuote": "The most restrictive value is `0` to not allow search to use location.",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "Location-aware Search and Cortana results stop working.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search' -Name 'AllowSearchToUseLocation' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "AllowSearchToUseLocation",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "AllowSearchToUseLocation",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "AllowSearchToUseLocation",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search"
+      ],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP Search/AllowSearchToUseLocation lists device scope for Pro, Enterprise, Education, and IoT Enterprise"
+    },
+    {
+      "id": "windows-search.cortana",
+      "name": "Cortana is allowed by Search policy",
+      "category": "Search and search-linked cloud features",
+      "scope": "machine",
+      "description": "Disables Cortana through the Windows Search policy registry value.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "Cortana and search-linked assistant features can make Microsoft service connections and process query context",
+      "threatProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "threatProofExactQuote": "Allow Cortana Choose whether to let Cortana install and run on the device.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services",
+      "fixProofExactQuote": "REG_DWORD: AllowCortana Value: 0",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "Cortana is disabled on Windows versions where this policy applies.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search' -Name 'AllowCortana' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "AllowCortana",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "AllowCortana",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Windows Search",
+          "name": "AllowCortana",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services"
+      ],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education"
+      ],
+      "applicabilityNote": "documented as Windows 10/11 restricted-traffic Group Policy/registry setting; Cortana availability varies by Windows version"
+    },
+    {
+      "id": "policy.office-diagnostic-data",
+      "name": "Office client diagnostic data is not set to Neither",
+      "category": "Office privacy and telemetry",
+      "scope": "user",
+      "description": "Sets Microsoft 365 Apps client software diagnostic data to Neither for the current user.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "Office client diagnostic data is sent to Microsoft unless this policy is set to Neither",
+      "threatProofUrl": "https://learn.microsoft.com/microsoft-365-apps/privacy/manage-privacy-controls",
+      "threatProofExactQuote": "Diagnostic data is used to keep Office secure and up-to-date",
+      "fixProofUrl": "https://learn.microsoft.com/microsoft-365-apps/privacy/manage-privacy-controls",
+      "fixProofExactQuote": "SendTelemetry 1=Required 2=Optional 3=Neither",
+      "downsides": "Microsoft receives less Office diagnostic data, which can reduce troubleshooting and product-improvement telemetry.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Policies\\Microsoft\\office\\common\\clienttelemetry' -Name 'sendtelemetry' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\common\\clienttelemetry",
+          "name": "sendtelemetry",
+          "value": 3,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\common\\clienttelemetry",
+          "name": "sendtelemetry",
+          "value": 3
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\common\\clienttelemetry",
+          "name": "sendtelemetry",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/manage-privacy-controls",
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/connected-experiences",
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/optional-connected-experiences"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies when Microsoft 365 Apps for enterprise/business desktop apps are installed"
+    },
+    {
+      "id": "policy.office-connected-experiences-all",
+      "name": "Office connected experiences are not disabled",
+      "category": "Office connected experiences",
+      "scope": "user",
+      "description": "Disables most connected experiences in Microsoft 365 Apps for the current user.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "Office connected experiences can use Microsoft cloud services and online storage integrations",
+      "threatProofUrl": "https://learn.microsoft.com/microsoft-365-apps/privacy/manage-privacy-controls",
+      "threatProofExactQuote": "document stored on Microsoft OneDrive or translating the contents of a Word document",
+      "fixProofUrl": "https://learn.microsoft.com/microsoft-365-apps/privacy/manage-privacy-controls",
+      "fixProofExactQuote": "DisconnectedState 1=Enabled 2=Disabled",
+      "downsides": "Coauthoring, online file storage integration, and many Office cloud-connected features become unavailable or degraded.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy' -Name 'disconnectedstate' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy",
+          "name": "disconnectedstate",
+          "value": 2,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy",
+          "name": "disconnectedstate",
+          "value": 2
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy",
+          "name": "disconnectedstate",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/manage-privacy-controls",
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/connected-experiences",
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/optional-connected-experiences"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies when Microsoft 365 Apps for enterprise/business desktop apps are installed"
+    },
+    {
+      "id": "policy.office-analyze-content",
+      "name": "Office connected experiences that analyze content are not disabled",
+      "category": "Office connected experiences",
+      "scope": "user",
+      "description": "Disables Office connected experiences that analyze document content for the current user.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "Office content-analysis features can send document content or derived content context to Microsoft cloud services",
+      "threatProofUrl": "https://learn.microsoft.com/microsoft-365-apps/privacy/manage-privacy-controls",
+      "threatProofExactQuote": "experiences that use your Office content",
+      "fixProofUrl": "https://learn.microsoft.com/microsoft-365-apps/privacy/manage-privacy-controls",
+      "fixProofExactQuote": "UserContentDisabled 1=Enabled 2=Disabled",
+      "downsides": "Designer, Translator, Smart Lookup-like features, and other content-analysis experiences become unavailable or degraded.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy' -Name 'usercontentdisabled' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy",
+          "name": "usercontentdisabled",
+          "value": 2,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy",
+          "name": "usercontentdisabled",
+          "value": 2
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy",
+          "name": "usercontentdisabled",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/manage-privacy-controls",
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/connected-experiences",
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/optional-connected-experiences"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies when Microsoft 365 Apps for enterprise/business desktop apps are installed"
+    },
+    {
+      "id": "policy.office-optional-connected-experiences",
+      "name": "Office optional connected experiences are not disabled",
+      "category": "Office connected experiences",
+      "scope": "user",
+      "description": "Disables additional optional connected experiences in Microsoft 365 Apps for the current user.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "optional connected experiences are Microsoft-direct services and can process user content or workflow outside the organization agreement",
+      "threatProofUrl": "https://learn.microsoft.com/microsoft-365-apps/privacy/manage-privacy-controls",
+      "threatProofExactQuote": "offered by Microsoft directly to your users",
+      "fixProofUrl": "https://learn.microsoft.com/microsoft-365-apps/privacy/manage-privacy-controls",
+      "fixProofExactQuote": "ControllerConnectedServicesEnabled 1=Enabled 2=Disabled",
+      "downsides": "Optional connected experiences such as some Bing-backed Office features become unavailable.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy' -Name 'controllerconnectedservicesenabled' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy",
+          "name": "controllerconnectedservicesenabled",
+          "value": 2,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy",
+          "name": "controllerconnectedservicesenabled",
+          "value": 2
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\office\\16.0\\common\\privacy",
+          "name": "controllerconnectedservicesenabled",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/manage-privacy-controls",
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/connected-experiences",
+        "https://learn.microsoft.com/en-us/microsoft-365-apps/privacy/optional-connected-experiences"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies when Microsoft 365 Apps for enterprise/business desktop apps are installed"
+    },
+    {
+      "id": "policy.onedrive-full-disable",
+      "name": "OneDrive file sync is not disabled by policy",
+      "category": "OneDrive sync",
+      "scope": "machine",
+      "description": "Prevents apps and Windows features from working with OneDrive file storage and stops OneDrive file synchronization with the cloud.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "OneDrive is a first-party cloud file exfiltration path for user and application content",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "threatProofExactQuote": "apps and features can work with OneDrive file storage",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "fixProofExactQuote": "OneDrive files aren't kept in sync with the cloud.",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "OneDrive app integration, file picker integration, camera roll upload, and cloud file sync stop working.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\OneDrive' -Name 'DisableFileSyncNGSC' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\OneDrive",
+          "name": "DisableFileSyncNGSC",
+          "value": 1,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\OneDrive",
+          "name": "DisableFileSyncNGSC",
+          "value": 1
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\OneDrive",
+          "name": "DisableFileSyncNGSC",
+          "value": 0
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-system"
+      ],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP System/DisableOneDriveFileSync lists device scope for Pro, Enterprise, Education, and IoT Enterprise; only relevant where OneDrive is present"
+    },
+    {
+      "id": "policy.onedrive-kfm-and-account-hardening",
+      "name": "OneDrive KFM, silent sign-in, personal sync and external sync are not blocked",
+      "category": "OneDrive account and folder redirection hardening",
+      "scope": "machine",
+      "description": "Blocks Known Folder Move to OneDrive, prevents automatic silent sign-in, blocks syncing of personal OneDrive accounts, and prevents syncing libraries or folders shared from other organizations.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "Desktop/Documents/Pictures, user credentials, and externally shared cloud content can be synchronized automatically or with minimal user friction",
+      "threatProofUrl": "https://learn.microsoft.com/sharepoint/use-group-policy",
+      "threatProofExactQuote": "Documents, Pictures, and Desktop folders to any OneDrive account",
+      "fixProofUrl": "https://learn.microsoft.com/sharepoint/use-group-policy",
+      "fixProofExactQuote": "Block users from signing in with a Microsoft account",
+      "downsides": "Known Folder Move protection, silent onboarding, personal OneDrive sync, and B2B external library sync stop working.",
+      "checkCommands": [
+        "Get-ItemProperty -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive' -ErrorAction SilentlyContinue | Select-Object KFMBlockOptIn, SilentAccountConfig, BlockExternalSync, DisableOfflineModeForExternalLibraries, KFMSilentOptIn, KFMOptInWithWizard",
+        "Get-ItemProperty -LiteralPath 'HKCU:\\SOFTWARE\\Policies\\Microsoft\\OneDrive' -ErrorAction SilentlyContinue | Select-Object DisablePersonalSync"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "KFMBlockOptIn",
+          "value": 1,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryValueAbsent",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "KFMSilentOptIn"
+        },
+        {
+          "type": "registryValueAbsent",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "KFMOptInWithWizard"
+        },
+        {
+          "type": "registryValueAbsent",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "SilentAccountConfig"
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "BlockExternalSync",
+          "value": 1,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "DisableOfflineModeForExternalLibraries",
+          "value": 1,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "DisablePersonalSync",
+          "value": 1,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "KFMBlockOptIn",
+          "value": 1
+        },
+        {
+          "type": "removeRegistryValue",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "KFMSilentOptIn"
+        },
+        {
+          "type": "removeRegistryValue",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "KFMOptInWithWizard"
+        },
+        {
+          "type": "removeRegistryValue",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "SilentAccountConfig"
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "BlockExternalSync",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "DisableOfflineModeForExternalLibraries",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "DisablePersonalSync",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/en-us/sharepoint/use-group-policy"
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "KFMBlockOptIn",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "BlockExternalSync",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "DisableOfflineModeForExternalLibraries",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\SOFTWARE\\Policies\\Microsoft\\OneDrive",
+          "name": "DisablePersonalSync",
+          "value": 0
+        }
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where OneDrive sync client policy registry keys are honored"
+    },
+    {
+      "id": "policy.edge-sync-disabled",
+      "name": "Edge cloud synchronization is not disabled",
+      "category": "Edge profile and sync",
+      "scope": "machine",
+      "description": "Disables Microsoft Edge cloud synchronization through Microsoft sync services.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "Edge profile data can be synchronized through Microsoft sync services",
+      "threatProofUrl": "https://learn.microsoft.com/deployedge/microsoft-edge-policies/syncdisabled",
+      "threatProofExactQuote": "cloud synchronization",
+      "fixProofUrl": "https://learn.microsoft.com/deployedge/microsoft-edge-policies/syncdisabled",
+      "fixProofExactQuote": "Example registry value 0x00000001",
+      "downsides": "Cross-device Edge sync stops working.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge' -Name 'SyncDisabled' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+          "name": "SyncDisabled",
+          "value": 1,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+          "name": "SyncDisabled",
+          "value": 1
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+          "name": "SyncDisabled",
+          "value": 0
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/deployedge/microsoft-edge-policies/syncdisabled"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where Microsoft Edge policy support is available"
+    },
+    {
+      "id": "policy.edge-personalization-reporting",
+      "name": "Edge personalization reporting is not disabled",
+      "category": "Edge personalization and telemetry",
+      "scope": "machine",
+      "description": "Disables Microsoft Edge personalization reporting that can send browsing history, favorites, collections, usage, and other browsing data to Microsoft.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "Edge personalization reporting can send browsing history, favorites, collections, usage, and other browsing data to Microsoft services",
+      "threatProofUrl": "https://learn.microsoft.com/deployedge/microsoft-edge-policies/personalizationreportingenabled",
+      "threatProofExactQuote": "collecting a user's Microsoft Edge browsing history, favorites and collections, usage, and other browsing data",
+      "fixProofUrl": "https://learn.microsoft.com/deployedge/microsoft-edge-policies/personalizationreportingenabled",
+      "fixProofExactQuote": "If you disable this policy, users can't change or override the setting.",
+      "downsides": "Personalized ads, Microsoft Edge, search, news, and other Microsoft service personalization based on Edge browsing data will be disabled.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge' -Name 'PersonalizationReportingEnabled' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+          "name": "PersonalizationReportingEnabled",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+          "name": "PersonalizationReportingEnabled",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+          "name": "PersonalizationReportingEnabled",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/deployedge/microsoft-edge-policies/personalizationreportingenabled"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where Microsoft Edge policy support is available; policy applies to profiles signed in with a Microsoft account"
+    },
+    {
+      "id": "policy.edge-diagnostic-data",
+      "name": "Edge diagnostic data is not disabled",
+      "category": "Edge personalization and telemetry",
+      "scope": "machine",
+      "description": "Disables required and optional Microsoft Edge diagnostic data about browser usage where the Edge policy is supported.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "Edge diagnostic data can include browser usage, visited websites, and crash reports sent to Microsoft",
+      "threatProofUrl": "https://learn.microsoft.com/deployedge/microsoft-edge-policies/diagnosticdata",
+      "threatProofExactQuote": "Optional diagnostic data includes data about how you use the browser, websites you visit, and crash reports to Microsoft",
+      "fixProofUrl": "https://learn.microsoft.com/deployedge/microsoft-edge-policies/diagnosticdata",
+      "fixProofExactQuote": "Off (0) = Off (Not recommended)",
+      "downsides": "Microsoft Edge sends less diagnostic data, which can reduce browser troubleshooting, reliability, and product-improvement telemetry.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge' -Name 'DiagnosticData' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+          "name": "DiagnosticData",
+          "value": 0,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+          "name": "DiagnosticData",
+          "value": 0
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Edge",
+          "name": "DiagnosticData",
+          "value": 1
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/deployedge/microsoft-edge-policies/diagnosticdata"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "applies where Microsoft Edge policy support is available; Edge version 122 and later supports this policy on Windows"
+    },
+    {
+      "id": "policy.windows-browser-setting-sync",
+      "name": "Windows browser settings sync group is not disabled",
+      "category": "Windows settings roaming",
+      "scope": "machine",
+      "description": "Disables the Windows 'browser' settings sync group so browser-related settings such as history and favorites are not synchronized through Windows settings sync.",
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "browser-related settings can roam across devices through Windows settings sync",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-experience",
+      "threatProofExactQuote": "history and favorites",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-experience",
+      "fixProofExactQuote": "won't be synced",
+      "maybeOnUnsupportedEdition": true,
+      "downsides": "Windows-level browser settings roaming stops. This does not replace Edge-specific sync hardening; use both.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\SettingSync' -Name 'DisableWebBrowserSettingSync' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\SettingSync",
+          "name": "DisableWebBrowserSettingSync",
+          "value": 2,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\SettingSync",
+          "name": "DisableWebBrowserSettingSync",
+          "value": 2
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\SettingSync",
+          "name": "DisableWebBrowserSettingSync",
+          "value": 0
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-experience"
+      ],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP Experience setting sync policies list device scope for Pro, Enterprise, Education, and IoT Enterprise"
+    },
+    {
+      "id": "policy.diagnostic-log-collection",
+      "name": "Optional diagnostic log collection is not limited",
+      "category": "Diagnostic upload hardening",
+      "scope": "machine",
+      "description": "Prevents optional diagnostic logs from being collected when Windows needs more troubleshooting data.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "optional diagnostic logs can be sent to Microsoft when optional diagnostic data is enabled",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "threatProofExactQuote": "Diagnostic logs are only sent when the device has been configured to send optional diagnostic data.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "fixProofExactQuote": "By enabling this policy setting, diagnostic logs won't be collected.",
+      "maybeOnUnsupportedEdition": true,
+      "minimumWindowsBuild": 22000,
+      "downsides": "Some advanced troubleshooting workflows receive fewer diagnostic logs.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'LimitDiagnosticLogCollection' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "LimitDiagnosticLogCollection",
+          "value": 1,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "LimitDiagnosticLogCollection",
+          "value": 1
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "LimitDiagnosticLogCollection",
+          "value": 0
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system"
+      ],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP System/LimitDiagnosticLogCollection lists device scope for Pro, Enterprise, Education, and IoT Enterprise on Windows 11 21H2 and later; Home may honor the registry value but this is not officially listed"
+    },
+    {
+      "id": "policy.diagnostic-dump-collection",
+      "name": "Optional diagnostic dump collection is not limited",
+      "category": "Diagnostic upload hardening",
+      "scope": "machine",
+      "description": "Limits optional diagnostic dump collection to smaller dump types when Windows needs troubleshooting data.",
+      "exfiltration": "yes",
+      "severity": "high",
+      "severityReason": "optional diagnostic dumps can include full or heap dumps and be sent to Microsoft",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "threatProofExactQuote": "we may occasionally collect full or heap dumps if the user has opted to send optional diagnostic data.",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system",
+      "fixProofExactQuote": "Windows Error Reporting is limited to sending kernel mini dumps and user mode triage dumps.",
+      "maybeOnUnsupportedEdition": true,
+      "minimumWindowsBuild": 22000,
+      "downsides": "Some advanced crash troubleshooting data becomes less detailed.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'LimitDumpCollection' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "LimitDumpCollection",
+          "value": 1,
+          "missingIsIssue": true
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "LimitDumpCollection",
+          "value": 1
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection",
+          "name": "LimitDumpCollection",
+          "value": 0
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-system"
+      ],
+      "applicableWindowsEditions": [
+        "Pro",
+        "Enterprise",
+        "Education",
+        "IoT Enterprise"
+      ],
+      "applicabilityNote": "Policy CSP System/LimitDumpCollection lists device scope for Pro, Enterprise, Education, and IoT Enterprise on Windows 11 21H2 and later; Home may honor the registry value but this is not officially listed"
+    },
+    {
+      "id": "user.windows-search-web-and-history",
+      "name": "Windows Search history or Bing web integration is enabled",
+      "category": "Windows Search privacy",
+      "scope": "user",
+      "description": "Disables device search history, Bing web results in Windows Search, and storage or display of recent search-box suggestions while keeping local file, application, and settings search available.",
+      "exfiltration": "possible",
+      "severity": "medium",
+      "severityReason": "web search integration can send typed search terms to an external search provider, while device search history stores previous queries locally",
+      "threatProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search",
+      "threatProofExactQuote": "Search can perform queries on the web",
+      "fixProofUrl": "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-search",
+      "fixProofExactQuote": "queries won't be performed on the web",
+      "downsides": "Bing web results, web suggestions, and recent search-query suggestions will disappear. Local search for indexed files, installed applications, and Windows settings should remain available.",
+      "checkCommands": [
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings' -Name 'IsDeviceSearchHistoryEnabled' -ErrorAction SilentlyContinue",
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search' -Name 'BingSearchEnabled' -ErrorAction SilentlyContinue",
+        "Get-ItemPropertyValue -LiteralPath 'HKCU:\\Software\\Policies\\Microsoft\\Windows\\Explorer' -Name 'DisableSearchBoxSuggestions' -ErrorAction SilentlyContinue"
+      ],
+      "checks": [
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings",
+          "name": "IsDeviceSearchHistoryEnabled",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search",
+          "name": "BingSearchEnabled",
+          "value": 0,
+          "missingIsIssue": true
+        },
+        {
+          "type": "registryDwordEquals",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\Windows\\Explorer",
+          "name": "DisableSearchBoxSuggestions",
+          "value": 1,
+          "missingIsIssue": true,
+          "blocking": false
+        }
+      ],
+      "disableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings",
+          "name": "IsDeviceSearchHistoryEnabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search",
+          "name": "BingSearchEnabled",
+          "value": 0
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\Windows\\Explorer",
+          "name": "DisableSearchBoxSuggestions",
+          "value": 1,
+          "requiresAdministrator": true,
+          "bestEffort": true
+        }
+      ],
+      "enableActions": [
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\SearchSettings",
+          "name": "IsDeviceSearchHistoryEnabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search",
+          "name": "BingSearchEnabled",
+          "value": 1
+        },
+        {
+          "type": "setRegistryDword",
+          "path": "HKCU:\\Software\\Policies\\Microsoft\\Windows\\Explorer",
+          "name": "DisableSearchBoxSuggestions",
+          "value": 0,
+          "requiresAdministrator": true,
+          "bestEffort": true
+        }
+      ],
+      "references": [
+        "https://learn.microsoft.com/windows/client-management/mdm/policy-csp-admx-windowsexplorer"
+      ],
+      "applicableWindowsEditions": [
+        "All supported Windows editions"
+      ],
+      "applicabilityNote": "current-user Search settings are Windows-version dependent; optional policy value may require supported editions"
+    }
+  ]
+}

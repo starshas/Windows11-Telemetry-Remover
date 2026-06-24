@@ -1,0 +1,6 @@
+ignored-issues.json
+WindowsTelemetryRemoverBackups/
+WindowsPrivacyToolBackups/
+*.log
+change-history.jsonl
+*.tmp
